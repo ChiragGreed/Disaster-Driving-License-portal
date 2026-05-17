@@ -1,0 +1,261 @@
+@keyframes flyPath1 {
+  0% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(15vw, -20vh) scale(1.2); }
+  50% { transform: translate(-10vw, -10vh) scale(0.8); }
+  75% { transform: translate(-20vw, 15vh) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes flyPath2 {
+  0% { transform: translate(0, 0) scale(1.1); }
+  25% { transform: translate(-25vw, 15vh) scale(0.9); }
+  50% { transform: translate(20vw, 25vh) scale(1.2); }
+  75% { transform: translate(10vw, -20vh) scale(0.8); }
+  100% { transform: translate(0, 0) scale(1.1); }
+}
+
+@keyframes flyPath3 {
+  0% { transform: translate(0, 0) scale(0.9); }
+  33% { transform: translate(20vw, 20vh) scale(1); }
+  66% { transform: translate(-15vw, -25vh) scale(1.1); }
+  100% { transform: translate(0, 0) scale(0.9); }
+}
+
+.fly {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.fly-0 { animation: flyPath1 15s infinite ease-in-out; }
+.fly-1 { animation: flyPath2 12s infinite ease-in-out; }
+.fly-2 { animation: flyPath3 18s infinite ease-in-out; }
+
+/* Buzzing effect */
+@keyframes buzz {
+  0% { transform: rotate(0deg) translate(0, 0); }
+  25% { transform: rotate(10deg) translate(2px, -2px); }
+  50% { transform: rotate(-10deg) translate(-2px, 2px); }
+  75% { transform: rotate(5deg) translate(2px, 2px); }
+  100% { transform: rotate(0deg) translate(0, 0); }
+}
+
+.buzzing-fly {
+  animation: buzz 0.05s infinite;
+  width: 5px;
+  height: 6px;
+  background-color: #1a1a1a;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+
+.buzzing-fly::before,
+.buzzing-fly::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  width: 4px;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+}
+
+.buzzing-fly::before {
+  left: -3px;
+  transform-origin: right center;
+  animation: flutter 0.02s infinite alternate;
+}
+
+.buzzing-fly::after {
+  right: -3px;
+  transform-origin: left center;
+  animation: flutterReverse 0.02s infinite alternate;
+}
+
+@keyframes flutter {
+  0% { transform: rotate(-20deg) scaleY(1); }
+  100% { transform: rotate(-50deg) scaleY(0.1); }
+}
+
+@keyframes flutterReverse {
+  0% { transform: rotate(20deg) scaleY(1); }
+  100% { transform: rotate(50deg) scaleY(0.1); }
+}
+
+/* Dusk effect overlay */
+.dusk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 100%, rgba(200, 80, 20, 0.15) 0%, rgba(30, 10, 0, 0.4) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* Custom Cursor for Web */
+.stuck-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Scanlines */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+  background-size: 100% 4px;
+}
+
+/* Flicker */
+.website-flicker {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background-color: white;
+  mix-blend-mode: difference;
+  animation: flickerAnim 0.1s infinite;
+}
+
+@keyframes flickerAnim {
+  0% { opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* Glitch Popup */
+.glitch-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  background: #000;
+  color: #0f0;
+  padding: 30px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 2rem;
+  font-weight: bold;
+  border: 2px solid #0f0;
+  text-align: center;
+  pointer-events: none;
+  animation: glitchAnim 0.15s infinite;
+  text-shadow: 2px 0 red, -2px 0 blue;
+}
+
+@keyframes glitchAnim {
+  0% { transform: translate(-50%, -50%) skew(0deg); }
+  20% { transform: translate(-52%, -50%) skew(-20deg); }
+  40% { transform: translate(-48%, -51%) skew(20deg); }
+  60% { transform: translate(-50%, -49%) skew(-10deg); }
+  80% { transform: translate(-51%, -50%) skew(10deg); }
+  100% { transform: translate(-50%, -50%) skew(0deg); }
+}
+
+/* Fake Warning (Win95 Style) */
+.fake-warning {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  background: #c0c0c0;
+  color: black;
+  padding: 2px;
+  font-family: "MS Sans Serif", Tahoma, Arial, sans-serif;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf, 2px 2px 5px rgba(0,0,0,0.5);
+  pointer-events: none;
+  width: 350px;
+  user-select: none;
+}
+
+.fake-warning-header {
+  background: #000080;
+  color: white;
+  padding: 3px 5px;
+  font-weight: bold;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fake-warning-close {
+  background: #c0c0c0;
+  color: black;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.fake-warning-content {
+  padding: 20px 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.fake-warning-icon {
+  width: 36px;
+  height: 36px;
+  background-color: #ff0000;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: bold;
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.fake-warning-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.fake-warning-footer {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 15px;
+}
+
+.fake-warning-button {
+  background: #c0c0c0;
+  color: black;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+  padding: 4px 30px;
+  font-family: "MS Sans Serif", Tahoma, Arial, sans-serif;
+  font-size: 12px;
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
