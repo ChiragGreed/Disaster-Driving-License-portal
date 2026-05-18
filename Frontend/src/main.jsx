@@ -7,12 +7,11 @@ import Effects from './Features/VisualEffects/Effects.jsx'
 
 
 createRoot(document.getElementById('root')).render(
-
-
-  <AppRoutes>
+  <>
     <Effects />
-    <App />
-  </AppRoutes>
 
-
+    <AppRoutes>
+      <App />
+    </AppRoutes>
+  </>
 )

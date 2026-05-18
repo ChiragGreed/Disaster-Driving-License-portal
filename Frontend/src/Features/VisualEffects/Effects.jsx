@@ -17,7 +17,7 @@ const CornerWeb = ({ className }) => (
   </svg>
 );
 
-export default function Effects() {
+export default function Effects({ children }) {
   const customCursorRef = useRef(null);
   const realMouse = useRef({ x: -100, y: -100 });
   const renderedMouse = useRef({ x: -100, y: -100 });
@@ -31,7 +31,7 @@ export default function Effects() {
     let timerId;
     const triggerRandomEffect = () => {
       const chance = Math.random();
-      
+
       if (chance < 0.2) {
         setFlickerActive(true);
         setTimeout(() => setFlickerActive(false), 100 + Math.random() * 300);
@@ -46,7 +46,7 @@ export default function Effects() {
         setWarningActive(true);
         setTimeout(() => setWarningActive(false), 800 + Math.random() * 1000);
       }
-      
+
       const nextTime = 2000 + Math.random() * 8000;
       timerId = setTimeout(triggerRandomEffect, nextTime);
     };
@@ -118,15 +118,15 @@ export default function Effects() {
       {flickerActive && <div className="website-flicker"></div>}
       {glitchActive && (
         <div className="glitch-popup">
-          ERROR 0x000000FF<br/>
-          MODI_CORRUPTION<br/>
+          ERROR 0x000000FF<br />
+          MODI_CORRUPTION<br />
           DATA LOST
           PAISA LOST
         </div>
       )}
       {warningActive && (
-        <div 
-          className="fake-warning" 
+        <div
+          className="fake-warning"
           style={{ top: warningPos.top, left: warningPos.left }}
         >
           <div className="fake-warning-header">
@@ -135,7 +135,7 @@ export default function Effects() {
           </div>
           <div className="fake-warning-content">
             <div className="fake-warning-icon">X</div>
-            <div className="fake-warning-text">A fatal exception 0E has occurred.<br/>The current application will be terminated.</div>
+            <div className="fake-warning-text">A fatal exception 0E has occurred.<br />The current application will be terminated.</div>
           </div>
           <div className="fake-warning-footer">
             <div className="fake-warning-button">OK</div>
@@ -147,18 +147,18 @@ export default function Effects() {
       <div className="dusk-overlay"></div>
 
       {/* Stuck Custom Cursor */}
-      <div 
-        ref={customCursorRef} 
-        className="stuck-cursor" 
+      <div
+        ref={customCursorRef}
+        className="stuck-cursor"
         style={{ pointerEvents: 'none' }}
       >
-        <img 
-          src="/images/CarKey.png" 
-          alt="car key cursor" 
-          className="w-10 h-10 rotate-150 object-contain pointer-events-none" 
-          style={{ 
+        <img
+          src="/images/CarKey.png"
+          alt="car key cursor"
+          className="w-10 h-10 rotate-150 object-contain pointer-events-none"
+          style={{
             pointerEvents: 'none',
-            filter: 'brightness(1.1) drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' 
+            filter: 'brightness(1.1) drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))'
           }}
         />
       </div>
@@ -186,6 +186,7 @@ export default function Effects() {
           <div className="buzzing-fly" style={{ animationDelay: `${Math.random()}s` }}></div>
         </div>
       ))}
+      {children}
     </>
   );
 }

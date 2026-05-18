@@ -1,16 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DrivingSimulator.css';
 
+
 const DrivingSimulator = ({ onClose, onSuccess }) => {
-    // Audio refs
+
+    // STATES FIRST
+    const [gameState, setGameState] = useState('START');
+    const [selectedCar, setSelectedCar] = useState('padmini');
+    const [score, setScore] = useState(0);
+    const [distanceLeft, setDistanceLeft] = useState(1000);
+    const [health, setHealth] = useState(100);
+    const [failReason, setFailReason] = useState('');
+    const [bribed, setBribed] = useState(false);
+    const [showBribeAnim, setShowBribeAnim] = useState(false);
+    const [speedText, setSpeedText] = useState('0 km/h');
+
+    // REFS AFTER STATES
     const marutiAudioRef = useRef(null);
+    const crashAudioRef = useRef(null);
     const padminiAudioRef = useRef(null);
     const ambassadorAudioRef = useRef(null);
 
-    // Ref for KhelKhatamBeta audio
-    const crashAudioRef = useRef(null);
-
-    // Play KhelKhatamBeta.mp3 when the user loses (gameState === 'CRASHED')
+    // NOW useEffect can safely use gameState
     useEffect(() => {
         if (gameState === 'CRASHED') {
             if (crashAudioRef.current) {
@@ -27,16 +38,16 @@ const DrivingSimulator = ({ onClose, onSuccess }) => {
         }
     }, [gameState]);
 
-    // Play car-specific songs
+    // Play Maruti song when Maruti car is selected and game is PLAYING
     useEffect(() => {
 
-        // Pause/reset all audios first
         const allAudios = [
             marutiAudioRef.current,
             padminiAudioRef.current,
             ambassadorAudioRef.current
         ];
 
+        // Stop everything first
         allAudios.forEach(audio => {
             if (audio) {
                 audio.pause();
@@ -58,31 +69,661 @@ const DrivingSimulator = ({ onClose, onSuccess }) => {
         }
 
         if (activeAudio) {
-            activeAudio.currentTime = 0;
-
             activeAudio.play().catch(err => {
                 console.log('Audio autoplay blocked:', err);
             });
         }
 
-        // Cleanup when component changes/unmounts
-        return () => {
-            allAudios.forEach(audio => {
-                if (audio) {
-                    audio.pause();
-                    audio.currentTime = 0;
+    }, [selectedCar, gameState]);
+
+
+    const canvasRef = useRef(null);
+    const requestRef = useRef(null);
+
+    // Audio effects synth helper
+    const synthSound = (type) => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'horn') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.setValueAtTime(480, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } else if (type === 'crash') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } else if (type === 'kaching') {
+                const osc2 = ctx.createOscillator();
+                osc2.connect(gain);
+                osc.type = 'sine';
+                osc2.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.setValueAtTime(1760, ctx.currentTime + 0.15);
+                osc2.frequency.setValueAtTime(1046, ctx.currentTime);
+                osc2.frequency.setValueAtTime(2093, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.start();
+                osc2.start();
+                osc.stop(ctx.currentTime + 0.4);
+                osc2.stop(ctx.currentTime + 0.4);
+            } else if (type === 'pothole') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                osc.frequency.setValueAtTime(50, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        } catch (e) {
+            console.log("Web Audio not supported or blocked");
+        }
+    };
+
+    // Keyboard states
+    const keys = useRef({
+        ArrowLeft: false,
+        ArrowRight: false,
+        ArrowUp: false,
+        ArrowDown: false,
+        KeyA: false,
+        KeyD: false,
+        KeyW: false,
+        KeyS: false,
+        Space: false
+    });
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.code in keys.current) {
+                keys.current[e.code] = true;
+                if (e.code === 'Space') {
+                    synthSound('horn');
                 }
-            });
+            }
         };
 
-    }, [selectedCar, gameState]);
+        const handleKeyUp = (e) => {
+            if (e.code in keys.current) {
+                keys.current[e.code] = false;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
+
+    // Game variables references (Wider road configuration)
+    const gameVars = useRef({
+        playerX: 295, // center lane for 590 width canvas
+        playerY: 350,
+        playerSpeed: 0,
+        maxSpeed: 8,
+        acceleration: 0.15,
+        friction: 0.05,
+        roadScroll: 0,
+        obstacles: [],
+        particles: [],
+        distanceRemaining: 1000,
+        playerHealth: 100,
+        laneWidth: 153,
+        roadWidth: 460,
+        roadLeft: 65,
+        shakeDuration: 0,
+        shakeIntensity: 0,
+        cowCooldown: 0
+    });
+
+    const startGame = () => {
+        setGameState('PLAYING');
+        setDistanceLeft(1000);
+        setHealth(100);
+        setBribed(false);
+        gameVars.current = {
+            playerX: 295,
+            playerY: 350,
+            playerSpeed: 0,
+            maxSpeed: selectedCar === 'maruti' ? 14 : selectedCar === 'ambassador' ? 9 : 12,
+            acceleration: selectedCar === 'maruti' ? 0.28 : selectedCar === 'ambassador' ? 0.16 : 0.22,
+            friction: 0.05,
+            roadScroll: 0,
+            obstacles: [],
+            particles: [],
+            distanceRemaining: 1000,
+            playerHealth: 100,
+            laneWidth: 153,
+            roadWidth: 460,
+            roadLeft: 65,
+            shakeDuration: 0,
+            shakeIntensity: 0,
+            cowCooldown: 0
+        };
+    };
+
+    // Main Game Loop Effect
+    useEffect(() => {
+        if (gameState !== 'PLAYING') {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            return;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const carColors = {
+            padmini: { body: '#f3c623', roof: '#222', accent: '#000' }, // classic kaali peeli taxi
+            maruti: { body: '#e72929', roof: '#e72929', accent: '#111' }, // fierce red
+            ambassador: { body: '#fcfcfc', roof: '#fcfcfc', accent: '#d3d3d3' } // vvip white
+        };
+
+        const activeColor = carColors[selectedCar];
+
+        const loop = () => {
+            const vars = gameVars.current;
+
+            // Handle shake
+            let shakeX = 0;
+            let shakeY = 0;
+            if (vars.shakeDuration > 0) {
+                shakeX = (Math.random() - 0.5) * vars.shakeIntensity;
+                shakeY = (Math.random() - 0.5) * vars.shakeIntensity;
+                vars.shakeDuration--;
+            }
+
+            // --- Update Physics & Controls ---
+            const leftPressed = keys.current.ArrowLeft || keys.current.KeyA;
+            const rightPressed = keys.current.ArrowRight || keys.current.KeyD;
+            const upPressed = keys.current.ArrowUp || keys.current.KeyW;
+            const downPressed = keys.current.ArrowDown || keys.current.KeyS;
+
+            // Steer Left/Right
+            if (leftPressed) {
+                vars.playerX -= 6.5; // wider steering responsiveness
+                if (vars.playerX < vars.roadLeft + 20) {
+                    vars.playerX = vars.roadLeft + 20;
+                    vars.playerHealth -= 0.5; // damage scraping side barrier
+                    triggerShake(5, 5);
+                }
+            }
+            if (rightPressed) {
+                vars.playerX += 6.5;
+                if (vars.playerX > vars.roadLeft + vars.roadWidth - 20) {
+                    vars.playerX = vars.roadLeft + vars.roadWidth - 20;
+                    vars.playerHealth -= 0.5;
+                    triggerShake(5, 5);
+                }
+            }
+
+            // Accelerate/Decelerate
+            if (upPressed) {
+                vars.playerSpeed += vars.acceleration;
+                if (vars.playerSpeed > vars.maxSpeed) vars.playerSpeed = vars.maxSpeed;
+            } else if (downPressed) {
+                vars.playerSpeed -= vars.acceleration * 1.5;
+                if (vars.playerSpeed < 0) vars.playerSpeed = 0;
+            } else {
+                // drag
+                if (vars.playerSpeed > 0) vars.playerSpeed -= vars.friction;
+                if (vars.playerSpeed < 0) vars.playerSpeed = 0;
+            }
+
+            // Scroll Road
+            vars.roadScroll += vars.playerSpeed;
+
+            // Distance tracking
+            if (vars.playerSpeed > 0) {
+                vars.distanceRemaining -= (vars.playerSpeed * 0.05);
+                if (vars.distanceRemaining <= 0) {
+                    vars.distanceRemaining = 0;
+                    setGameState('PASSED');
+                    synthSound('kaching');
+                    return;
+                }
+                setDistanceLeft(Math.ceil(vars.distanceRemaining));
+            }
+
+            // Speed dashboard presentation
+            const currentKmh = Math.ceil(vars.playerSpeed * 15);
+            setSpeedText(`${currentKmh} km/h`);
+
+            // Health tracking
+            setHealth(Math.ceil(vars.playerHealth));
+            if (vars.playerHealth <= 0) {
+                vars.playerHealth = 0;
+                setFailReason("Your Maruti/Padmini disintegrated completely due to excessive potholes and crashes!");
+                setGameState('CRASHED');
+                synthSound('crash');
+                return;
+            }
+
+            // --- Update & Spawn Obstacles ---
+            if (Math.random() < 0.022 && vars.obstacles.length < 6) {
+                const lane = Math.floor(Math.random() * 3); // 0, 1, 2
+                const types = ['car', 'pothole', 'cow', 'speedbreaker', 'rickshaw'];
+
+                // Stray cows spawn warning
+                let type = types[Math.floor(Math.random() * types.length)];
+                if (type === 'cow' && vars.cowCooldown > 0) {
+                    type = 'rickshaw';
+                }
+
+                const newObstacle = {
+                    x: vars.roadLeft + (lane * vars.laneWidth) + vars.laneWidth / 2,
+                    y: -50,
+                    type: type,
+                    speed: type === 'car' ? (3 + Math.random() * 4) : type === 'rickshaw' ? (2 + Math.random() * 3) : 0,
+                    width: type === 'speedbreaker' ? vars.laneWidth : type === 'rickshaw' ? 38 : 42,
+                    height: type === 'cow' ? 44 : type === 'pothole' ? 32 : type === 'speedbreaker' ? 14 : type === 'rickshaw' ? 48 : 58,
+                    lane: lane,
+                    targetX: vars.roadLeft + (lane * vars.laneWidth) + vars.laneWidth / 2,
+                    color: ['#e72929', '#2563eb', '#16a34a', '#a855f7'][Math.floor(Math.random() * 4)],
+                    hasBounced: false
+                };
+
+                if (type === 'speedbreaker') {
+                    newObstacle.x = vars.roadLeft + vars.roadWidth / 2; // cover whole road
+                    newObstacle.targetX = vars.roadLeft + vars.roadWidth / 2;
+                    newObstacle.width = vars.roadWidth;
+                }
+
+                vars.obstacles.push(newObstacle);
+                if (type === 'cow') {
+                    vars.cowCooldown = 120; // prevent immediate cows
+                }
+            }
+
+            if (vars.cowCooldown > 0) vars.cowCooldown--;
+
+            // Update obstacles
+            for (let i = vars.obstacles.length - 1; i >= 0; i--) {
+                const obs = vars.obstacles[i];
+
+                // Active Auto-Rickshaw Aggressive Swerving AI Behavior!
+                if (obs.type === 'rickshaw' && !obs.hasBounced && obs.y > 60 && obs.y < 260) {
+                    // Rickshaw randomly decides to jump lanes directly into the player's path!
+                    if (Math.random() < 0.035) {
+                        const playerLane = Math.floor((vars.playerX - vars.roadLeft) / vars.laneWidth);
+                        if (playerLane !== obs.lane) {
+                            const diff = playerLane - obs.lane;
+                            const step = diff > 0 ? 1 : -1;
+                            obs.lane += step;
+                            obs.targetX = vars.roadLeft + (obs.lane * vars.laneWidth) + vars.laneWidth / 2;
+                            obs.hasBounced = true; // swerve once
+
+                            // Screech sound notify
+                            synthSound('pothole');
+                        }
+                    }
+                }
+
+                // Smooth slide animation towards target lane x position
+                if (obs.targetX !== undefined) {
+                    obs.x += (obs.targetX - obs.x) * 0.12; // 12% frame interpolation for smooth lateral slide
+                }
+
+                // Scroll obstacle down relative to player speed
+                obs.y += (vars.playerSpeed - obs.speed);
+
+                // Check out of bounds
+                if (obs.y > canvas.height + 100) {
+                    vars.obstacles.splice(i, 1);
+                    continue;
+                }
+
+                // Collision Detection with Player Car
+                const pBox = {
+                    x: vars.playerX - 20, // wider car box
+                    y: vars.playerY - 30,
+                    w: 40,
+                    h: 60
+                };
+
+                const oBox = {
+                    x: obs.x - obs.width / 2,
+                    y: obs.y - obs.height / 2,
+                    w: obs.width,
+                    h: obs.height
+                };
+
+                if (pBox.x < oBox.x + oBox.w &&
+                    pBox.x + pBox.w > oBox.x &&
+                    pBox.y < oBox.y + oBox.h &&
+                    pBox.y + pBox.h > oBox.y) {
+
+                    // Collided!
+                    if (obs.type === 'cow') {
+                        setFailReason("TEST FAILED: You hit a sacred cow! 🐄 Instant driving test failure, RTO suspension, and direct jail sentence!");
+                        setGameState('CRASHED');
+                        synthSound('crash');
+                        return;
+                    } else if (obs.type === 'car') {
+                        vars.playerHealth -= 25;
+                        triggerShake(20, 15);
+                        synthSound('pothole');
+                        obs.y -= 60;
+                        obs.speed = -2;
+                    } else if (obs.type === 'rickshaw') {
+                        vars.playerHealth -= 35; // auto rickshaw cuts you off and hits hard!
+                        triggerShake(25, 20);
+                        synthSound('crash');
+                        obs.y -= 70;
+                        obs.speed = -3;
+                    } else if (obs.type === 'pothole') {
+                        vars.playerHealth -= 10;
+                        triggerShake(15, 10);
+                        synthSound('pothole');
+                        vars.playerSpeed *= 0.4;
+                        vars.obstacles.splice(i, 1); // remove pothole
+                    } else if (obs.type === 'speedbreaker') {
+                        if (vars.playerSpeed > 3) {
+                            vars.playerHealth -= 15;
+                            triggerShake(20, 8);
+                            synthSound('pothole');
+                            vars.playerSpeed *= 0.2;
+                        } else {
+                            triggerShake(5, 3);
+                            vars.playerSpeed *= 0.8;
+                        }
+                        vars.obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            // --- Draw Scenery ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // 1. Draw Grass Shoulders (Retro green dithered pattern)
+            ctx.fillStyle = '#429346';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw vintage grass trees
+            ctx.fillStyle = '#327236';
+            const grassOffset = Math.floor(vars.roadScroll) % 50;
+            for (let y = -50 + grassOffset; y < canvas.height + 50; y += 50) {
+                // left side bushes
+                ctx.beginPath();
+                ctx.arc(25, y, 18, 0, Math.PI * 2);
+                ctx.fill();
+                // right side bushes
+                ctx.beginPath();
+                ctx.arc(canvas.width - 25, y + 25, 18, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 2. Draw Yellow Road Borders
+            ctx.fillStyle = '#ff9900';
+            ctx.fillRect(vars.roadLeft - 8, 0, 8, canvas.height);
+            ctx.fillRect(vars.roadLeft + vars.roadWidth, 0, 8, canvas.height);
+
+            // 3. Draw Road Concrete (Dusty Light Gray Concrete Road as requested)
+            ctx.fillStyle = '#a1a8b0';
+            ctx.fillRect(vars.roadLeft, 0, vars.roadWidth, canvas.height);
+
+            // Vintage Concrete Lane Joints/Cracks texture details
+            ctx.strokeStyle = '#8d949c';
+            ctx.lineWidth = 2;
+            const jointsOffset = Math.floor(vars.roadScroll) % 120;
+            for (let y = -120 + jointsOffset; y < canvas.height + 120; y += 120) {
+                ctx.beginPath();
+                ctx.moveTo(vars.roadLeft, y);
+                ctx.lineTo(vars.roadLeft + vars.roadWidth, y);
+                ctx.stroke();
+            }
+
+            // 4. Draw Scrolling Lane Dividers (Dark slate lane marks on light gray concrete)
+            ctx.strokeStyle = '#4a5460';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([25, 25]);
+            ctx.lineDashOffset = -vars.roadScroll;
+
+            // Lane 1 divider
+            ctx.beginPath();
+            ctx.moveTo(vars.roadLeft + vars.laneWidth, 0);
+            ctx.lineTo(vars.roadLeft + vars.laneWidth, canvas.height);
+            ctx.stroke();
+
+            // Lane 2 divider
+            ctx.beginPath();
+            ctx.moveTo(vars.roadLeft + vars.laneWidth * 2, 0);
+            ctx.lineTo(vars.roadLeft + vars.laneWidth * 2, canvas.height);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+
+            // 5. Draw Obstacles
+            vars.obstacles.forEach((obs) => {
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+
+                if (obs.type === 'car') {
+                    // Retro traffic car representation
+                    ctx.fillStyle = obs.color;
+                    ctx.fillRect(-16, -26, 32, 52);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(-19, -19, 3, 11);
+                    ctx.fillRect(16, -19, 3, 11);
+                    ctx.fillRect(-19, 11, 3, 11);
+                    ctx.fillRect(16, 11, 3, 11);
+                    ctx.fillStyle = '#87ceeb';
+                    ctx.fillRect(-13, -13, 26, 11);
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(-13, 1, 26, 16);
+                    ctx.fillStyle = '#ffffbb';
+                    ctx.fillRect(-12, -27, 4, 3);
+                    ctx.fillRect(8, -27, 4, 3);
+                } else if (obs.type === 'cow') {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '36px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🐄', 0, 0);
+                } else if (obs.type === 'pothole') {
+                    ctx.fillStyle = '#2b2d30'; // dark crater contrast on light gray road
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 20, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#4e5257';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-20, 0);
+                    ctx.lineTo(-26, -2);
+                    ctx.moveTo(20, 0);
+                    ctx.lineTo(27, 3);
+                    ctx.stroke();
+                } else if (obs.type === 'speedbreaker') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(-obs.width / 2, -7, obs.width, 14);
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    for (let x = -obs.width / 2 + 10; x < obs.width / 2; x += 25) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, -7);
+                        ctx.lineTo(x + 10, 7);
+                        ctx.stroke();
+                    }
+                } else if (obs.type === 'rickshaw') {
+                    // Auto Rickshaw shape (Retro Indian Yellow & Green)
+                    ctx.fillStyle = '#eab308'; // yellow canopy top
+                    ctx.fillRect(-15, -20, 30, 24);
+
+                    ctx.fillStyle = '#15803d'; // green lower body
+                    ctx.fillRect(-17, 4, 34, 18);
+
+                    // black chassis wheels
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(-19, 6, 3, 12);
+                    ctx.fillRect(16, 6, 3, 12);
+                    ctx.fillRect(-2, -24, 4, 5); // front wheel
+
+                    // back windshield canvas look
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(-12, 14, 24, 4);
+
+                    // windshield front
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(-11, -15, 22, 6);
+
+                    // lights
+                    ctx.fillStyle = '#ffffbb';
+                    ctx.fillRect(-9, -21, 3, 2);
+                    ctx.fillRect(6, -21, 3, 2);
+                }
+                ctx.restore();
+            });
+
+            // 6. Draw Player Car
+            ctx.save();
+            ctx.translate(vars.playerX, vars.playerY);
+
+            // Wheels
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(-22, -22, 4, 13);
+            ctx.fillRect(18, -22, 4, 13);
+            ctx.fillRect(-22, 13, 4, 13);
+            ctx.fillRect(18, 13, 4, 13);
+
+            // Body shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fillRect(-20, -28, 40, 56);
+
+            // Body
+            ctx.fillStyle = activeColor.body;
+            ctx.fillRect(-18, -30, 36, 60);
+
+            if (selectedCar === 'padmini') {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(-18, -4, 36, 34);
+                ctx.fillStyle = '#f3c623';
+                ctx.fillRect(-14, -20, 28, 20);
+            } else if (selectedCar === 'ambassador') {
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(0, -6, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffb300';
+                ctx.fillRect(12, -24, 2, 9);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(14, -28, 4, 4);
+            } else if (selectedCar === 'maruti') {
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-7, -30, 3, 60);
+                ctx.fillRect(4, -30, 3, 60);
+            }
+
+            // Windshields
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(-14, -18, 28, 11);
+            ctx.fillRect(-14, 16, 28, 9);
+            ctx.fillRect(-17, -4, 2, 18);
+            ctx.fillRect(15, -4, 2, 18);
+
+            // front grill
+            ctx.fillStyle = '#222';
+            ctx.fillRect(-11, -30, 22, 3);
+
+            // Headlights beam glow
+            ctx.fillStyle = 'rgba(255, 255, 180, 0.45)';
+            ctx.beginPath();
+            ctx.moveTo(-14, -30);
+            ctx.lineTo(-28, -75);
+            ctx.lineTo(0, -75);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(14, -30);
+            ctx.lineTo(28, -75);
+            ctx.lineTo(0, -75);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#ffeedd';
+            ctx.fillRect(-15, -31, 4, 2);
+            ctx.fillRect(11, -31, 4, 2);
+
+            ctx.fillStyle = '#ff2222';
+            ctx.fillRect(-16, 29, 4, 2);
+            ctx.fillRect(12, 29, 4, 2);
+
+            ctx.restore();
+
+            ctx.restore();
+
+            requestRef.current = requestAnimationFrame(loop);
+        };
+
+        const triggerShake = (dur, intens) => {
+            const vars = gameVars.current;
+            vars.shakeDuration = dur;
+            vars.shakeIntensity = intens;
+        };
+
+        requestRef.current = requestAnimationFrame(loop);
+
+        return () => {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, [gameState, selectedCar]);
+
+    const handleBribe = () => {
+        synthSound('kaching');
+        setShowBribeAnim(true);
+        setTimeout(() => {
+            setBribed(true);
+            setShowBribeAnim(false);
+            setGameState('PASSED');
+        }, 1500);
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 font-mono select-none">
-            {/* Maruti Song Audio Element */}
-            <audio ref={marutiAudioRef} src="../../../public/Sounds/Maruti.mp3" loop style={{ display: 'none' }} />
-            {/* Crash (KhelKhatamBeta) Audio Element */}
-            <audio ref={crashAudioRef} src="../../../public/Sounds/KhelKhatamBeta.mp3" style={{ display: 'none' }} />
+            <audio
+                ref={marutiAudioRef}
+                src="/Sounds/Maruti.mp3"
+                loop
+                style={{ display: 'none' }}
+            />
+
+            <audio
+                ref={padminiAudioRef}
+                src="/Sounds/ChandSeParda.mp3"
+                loop
+                style={{ display: 'none' }}
+            />
+
+            <audio
+                ref={ambassadorAudioRef}
+                src="/Sounds/15Sector.mp3"
+                loop
+                style={{ display: 'none' }}
+            />
+
+            <audio
+                ref={crashAudioRef}
+                src="/Sounds/KhelKhatamBeta.mp3"
+                style={{ display: 'none' }}
+            />
             {/* Rupee notes bribe animation Overlay */}
             {showBribeAnim && (
                 <div className="absolute inset-0 z-[110] bg-black/70 flex items-center justify-center overflow-hidden pointer-events-none">

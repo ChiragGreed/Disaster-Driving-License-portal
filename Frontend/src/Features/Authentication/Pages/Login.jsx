@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -10,6 +10,17 @@ const Login = ({ onBack }) => {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
+    };
+
+    const audioRef = useRef(null);
+
+    const playModiDialogue = () => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch((err) => {
+                console.log("Audio play blocked:", err);
+            });
+        }
     };
 
     const [now, setNow] = useState(new Date());
@@ -40,7 +51,7 @@ const Login = ({ onBack }) => {
 
     const showModiAlert = (message, title = "", onConfirm = null) => {
         const randomImage = '/images/Modi.jpeg';
-        
+
         const titles = ["Mitron!", "Achhe Din!", "Wah Modi Ji Wah!", "Hypocrisy Ki Seema!", "Surgical Strike!"];
         const randomTitle = title || titles[Math.floor(Math.random() * titles.length)];
 
@@ -64,6 +75,7 @@ const Login = ({ onBack }) => {
             const nextCount = loginFailCount + 1;
             setLoginFailCount(nextCount);
             if (nextCount >= 2) {
+                playModiDialogue();
                 showModiAlert(
                     "Bhaiyo aur Behno... You have failed to log in twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
                     "PM Modi Mercy Granted!",
@@ -78,6 +90,7 @@ const Login = ({ onBack }) => {
             const nextCount = loginFailCount + 1;
             setLoginFailCount(nextCount);
             if (nextCount >= 2) {
+                playModiDialogue();
                 showModiAlert(
                     "Bhaiyo aur Behno... You have failed the Captcha twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
                     "PM Modi Mercy Granted!",
@@ -97,6 +110,7 @@ const Login = ({ onBack }) => {
             const nextCount = loginFailCount + 1;
             setLoginFailCount(nextCount);
             if (nextCount >= 2) {
+                playModiDialogue();
                 showModiAlert(
                     "Bhaiyo aur Behno... You have failed to log in twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
                     "PM Modi Mercy Granted!",
@@ -133,6 +147,10 @@ const Login = ({ onBack }) => {
 
     return (
         <div className="min-h-screen flex flex-col bg-[#e6e6e6] font-sans">
+
+            <audio ref={audioRef} preload="auto">
+                <source src="/Sounds/Bhujiyam.mp3" type="audio/mpeg" />
+            </audio>
             {/* Header */}
             <header className="bg-[#29A3E8] text-white py-2 px-6 flex justify-between items-center shadow-md">
                 <div className="flex items-center w-1/3">
@@ -220,7 +238,7 @@ const Login = ({ onBack }) => {
                                             <span className="bg-[#222] text-white rounded-full w-[14px] h-[14px] flex items-center justify-center text-[10px] font-bold">?</span>
                                         </a>
                                         <span className="text-[12px] font-semibold text-gray-700 flex items-center gap-1 mt-1">
-                                            Don't have an account? 
+                                            Don't have an account?
                                             <button onClick={() => navigate('/register')} className="text-[#218121] hover:underline font-bold">Register Here</button>
                                         </span>
                                     </div>
@@ -249,7 +267,7 @@ const Login = ({ onBack }) => {
                             <span className="flex items-center gap-2">
                                 🖥️ {modiPopup.title}
                             </span>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setModiPopup(prev => ({ ...prev, show: false }));
                                     if (modiPopup.onConfirm) modiPopup.onConfirm();
@@ -264,10 +282,10 @@ const Login = ({ onBack }) => {
                         <div className="p-4 flex flex-col items-center gap-4 text-center">
                             {/* Image Container with Inset 3D border */}
                             <div className="w-40 h-40 border-t-2 border-l-2 border-[#808080] border-b-2 border-r-2 border-white bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
-                                <img 
-                                    src="/images/Modi.jpeg" 
-                                    alt="Modi Alert" 
-                                    className="w-full h-full object-contain filter contrast-125 brightness-95" 
+                                <img
+                                    src="/images/Modi.jpeg"
+                                    alt="Modi Alert"
+                                    className="w-full h-full object-contain filter contrast-125 brightness-95"
                                 />
                             </div>
 
@@ -279,7 +297,7 @@ const Login = ({ onBack }) => {
                             </div>
 
                             {/* Ok Button */}
-                            <button 
+                            <button
                                 className="bg-[#c0c0c0] text-black font-bold text-xs px-8 py-1.5 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[1px_1px_0px_0px_#000000] active:border-t-2 active:border-l-2 active:border-b-2 active:border-r-2 active:border-white active:border-t-[#808080] active:border-l-[#808080] active:shadow-none outline-none focus:outline-dotted focus:outline-1 focus:outline-black cursor-pointer font-sans"
                                 onClick={() => {
                                     setModiPopup(prev => ({ ...prev, show: false }));
