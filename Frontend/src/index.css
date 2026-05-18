@@ -22,5 +22,49 @@
 
 /* Global Custom Cursor */
 * {
-  cursor: none !important;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E"), auto !important;
+}
+
+/* Interactive India SVG Map Styling */
+.india-map-container svg {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.05));
+  transition: all 0.3s ease;
+}
+
+.india-map-container svg path {
+  fill: #f7fafc; /* Clean off-white light retro grey background */
+  stroke: #4a5568; /* Solid structural slate gray outline */
+  stroke-width: 1.2;
+  transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
+  pointer-events: all;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E"), pointer !important;
+}
+
+/* Hover style: glowing high contrast outline map border */
+.india-map-container svg path:hover {
+  fill: #e2e8f0; /* Darker grey to stand out */
+  stroke: #1CA6EF; /* RTO Royal Blue glow */
+  stroke-width: 2.2;
+  filter: drop-shadow(0 0 8px rgba(28, 166, 239, 0.6));
+  z-index: 10;
+}
+
+/* Active style: glowing vintage orange selection highlighting */
+.india-map-container svg path.active-state-path {
+  fill: #ea580c !important; /* Rich vintage orange */
+  stroke: #ffffff !important;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 12px rgba(234, 88, 12, 0.9));
+}
+
+/* Vintage RTO terminal grid background and blink cursor effect */
+@keyframes rtoBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.rto-terminal-blink {
+  animation: rtoBlink 1s infinite;
 }

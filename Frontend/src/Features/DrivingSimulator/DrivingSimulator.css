@@ -1,0 +1,36 @@
+/* Retro Cabinet Neon Header & Overlay animations */
+@keyframes coinFly {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-20vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.rupee-note {
+    position: absolute;
+    color: #4ade80;
+    font-size: 24px;
+    font-weight: 900;
+    font-family: 'Courier New', Courier, monospace;
+    pointer-events: none;
+    animation: coinFly 1.5s linear infinite;
+    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000;
+}
+
+/* Steering console button micro-animations */
+button:active {
+    transform: scale(0.95);
+}
+
+/* Canvas styling override for crisp pixels */
+canvas {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-color: #a1a8b0;
+}

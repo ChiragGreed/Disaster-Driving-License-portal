@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../Hook/useAuth';
 
 const Login = ({ onBack }) => {
     const generateCaptcha = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let result = '';
         for (let i = 0; i < 46; i++) {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -14,7 +15,7 @@ const Login = ({ onBack }) => {
     const [now, setNow] = useState(new Date());
     const [captchaValue, setCaptchaValue] = useState(generateCaptcha);
     const [captchaInput, setCaptchaInput] = useState('');
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
 
@@ -28,18 +29,83 @@ const Login = ({ onBack }) => {
         setCaptchaInput('');
     };
 
-    const handleLogin = () => {
-        if (!username || !password) {
-            alert("Please enter username and password.");
+    const [modiPopup, setModiPopup] = useState({
+        show: false,
+        message: '',
+        title: '',
+        image: '',
+        btnText: '',
+        onConfirm: null
+    });
+
+    const showModiAlert = (message, title = "", onConfirm = null) => {
+        const randomImage = '/images/Modi.jpeg';
+        
+        const titles = ["Mitron!", "Achhe Din!", "Wah Modi Ji Wah!", "Hypocrisy Ki Seema!", "Surgical Strike!"];
+        const randomTitle = title || titles[Math.floor(Math.random() * titles.length)];
+
+        const buttons = ["OK", "Mitron!", "Ache Din?", "Swachh Bharat!", "Modi Hai To Mumkin!"];
+        const randomButton = buttons[Math.floor(Math.random() * buttons.length)];
+
+        setModiPopup({
+            show: true,
+            message,
+            title: randomTitle,
+            image: randomImage,
+            btnText: randomButton,
+            onConfirm
+        });
+    };
+
+    const [loginFailCount, setLoginFailCount] = useState(0);
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            const nextCount = loginFailCount + 1;
+            setLoginFailCount(nextCount);
+            if (nextCount >= 2) {
+                showModiAlert(
+                    "Bhaiyo aur Behno... You have failed to log in twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
+                    "PM Modi Mercy Granted!",
+                    () => navigate('/services')
+                );
+            } else {
+                showModiAlert("Please enter email and password, my dear friends!", "Mitron!");
+            }
             return;
         }
-        if (captchaInput !== captchaValue) {
-            alert("Invalid Captcha! Please try again.");
-            handleRefreshCaptcha();
+        if (captchaInput.trim().toUpperCase() !== captchaValue.toUpperCase()) {
+            const nextCount = loginFailCount + 1;
+            setLoginFailCount(nextCount);
+            if (nextCount >= 2) {
+                showModiAlert(
+                    "Bhaiyo aur Behno... You have failed the Captcha twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
+                    "PM Modi Mercy Granted!",
+                    () => navigate('/services')
+                );
+            } else {
+                showModiAlert("Invalid Captcha! Hypocrisy ki bhi seema hoti hai... Try again!", "Hypocrisy Ki Seema!");
+                handleRefreshCaptcha();
+            }
             return;
         }
-        alert("Login successful!");
-        // Logic for authenticating the user would go here
+        try {
+            await loginHandler({ email, password });
+            showModiAlert("Login successful! Achhe din has finally arrived!", "Achhe Din!", () => navigate('/'));
+        } catch (error) {
+            console.error(error);
+            const nextCount = loginFailCount + 1;
+            setLoginFailCount(nextCount);
+            if (nextCount >= 2) {
+                showModiAlert(
+                    "Bhaiyo aur Behno... You have failed to log in twice! I am deeply moved by your struggle. Under the PM's special mercy scheme, you are hereby permitted to bypass the login directly to services!",
+                    "PM Modi Mercy Granted!",
+                    () => navigate('/services')
+                );
+            } else {
+                showModiAlert("Login failed. Yeh toh badtameezi hai... Please check your details!", "Surgical Strike!");
+            }
+        }
     };
 
     const formatDate = (date) => {
@@ -99,13 +165,13 @@ const Login = ({ onBack }) => {
                     {/* Card Body */}
                     <div className="px-10 pb-8">
                         <div className="grid grid-cols-[80px_1fr] gap-y-4 items-center">
-                            {/* Username */}
-                            <label className="text-[13px] font-semibold text-gray-800">Username:</label>
+                            {/* Email */}
+                            <label className="text-[13px] font-semibold text-gray-800">Email:</label>
                             <input
                                 type="text"
-                                placeholder="Username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="border border-[#bce8f1] rounded px-3 py-[5px] text-[13px] outline-none focus:border-[#66afe9] focus:shadow-[inset_0_1px_1px_rgba(0,0,0,0.075),0_0_8px_rgba(102,175,233,0.6)] transition-all"
                             />
 
@@ -153,6 +219,10 @@ const Login = ({ onBack }) => {
                                             Forgot your password
                                             <span className="bg-[#222] text-white rounded-full w-[14px] h-[14px] flex items-center justify-center text-[10px] font-bold">?</span>
                                         </a>
+                                        <span className="text-[12px] font-semibold text-gray-700 flex items-center gap-1 mt-1">
+                                            Don't have an account? 
+                                            <button onClick={() => navigate('/register')} className="text-[#218121] hover:underline font-bold">Register Here</button>
+                                        </span>
                                     </div>
                                 </div>
 
@@ -170,6 +240,58 @@ const Login = ({ onBack }) => {
                     </div>
                 </div>
             </div>
+            {/* Funny Modi Popup Modal (Old Era Windows 95 Style) */}
+            {modiPopup.show && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4 font-mono">
+                    <div className="bg-[#c0c0c0] p-1 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[2px_2px_0px_0px_#000000] max-w-sm w-full select-none">
+                        {/* Title Bar */}
+                        <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center font-bold text-sm tracking-wide font-sans">
+                            <span className="flex items-center gap-2">
+                                🖥️ {modiPopup.title}
+                            </span>
+                            <button 
+                                onClick={() => {
+                                    setModiPopup(prev => ({ ...prev, show: false }));
+                                    if (modiPopup.onConfirm) modiPopup.onConfirm();
+                                }}
+                                className="bg-[#c0c0c0] text-black border-t border-l border-white border-b border-r border-[#808080] shadow-[1px_1px_0px_0px_#000000] w-5 h-5 flex items-center justify-center text-xs active:border-t-black active:border-l-black active:border-b-white active:border-r-white active:shadow-none font-sans font-bold cursor-pointer"
+                            >
+                                X
+                            </button>
+                        </div>
+
+                        {/* Dialog Body */}
+                        <div className="p-4 flex flex-col items-center gap-4 text-center">
+                            {/* Image Container with Inset 3D border */}
+                            <div className="w-40 h-40 border-t-2 border-l-2 border-[#808080] border-b-2 border-r-2 border-white bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
+                                <img 
+                                    src="/images/Modi.jpeg" 
+                                    alt="Modi Alert" 
+                                    className="w-full h-full object-contain filter contrast-125 brightness-95" 
+                                />
+                            </div>
+
+                            {/* Message Container with Fieldset look */}
+                            <div className="w-full border-t-2 border-l-2 border-[#808080] border-b-2 border-r-2 border-white p-3 bg-[#e0e0e0] text-left text-xs text-black font-sans font-semibold min-h-[60px] flex items-center shadow-inner">
+                                <span className="leading-relaxed">
+                                    ⚠️ {modiPopup.message}
+                                </span>
+                            </div>
+
+                            {/* Ok Button */}
+                            <button 
+                                className="bg-[#c0c0c0] text-black font-bold text-xs px-8 py-1.5 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[1px_1px_0px_0px_#000000] active:border-t-2 active:border-l-2 active:border-b-2 active:border-r-2 active:border-white active:border-t-[#808080] active:border-l-[#808080] active:shadow-none outline-none focus:outline-dotted focus:outline-1 focus:outline-black cursor-pointer font-sans"
+                                onClick={() => {
+                                    setModiPopup(prev => ({ ...prev, show: false }));
+                                    if (modiPopup.onConfirm) modiPopup.onConfirm();
+                                }}
+                            >
+                                {modiPopup.btnText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

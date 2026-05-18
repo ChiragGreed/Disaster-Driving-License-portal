@@ -10,8 +10,10 @@ const banners = [
 
 export default function App() {
   return (
-    <main>
-      <Dashboard />
-    </main>
+    <>
+      <main>
+        <Dashboard />
+      </main>
+    </>
   )
 }

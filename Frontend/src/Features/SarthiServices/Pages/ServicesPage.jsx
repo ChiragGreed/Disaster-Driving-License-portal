@@ -6,11 +6,15 @@ import {
     ClipboardList, Calendar, BookOpen, Clock, CheckCircle, 
     Upload, Monitor, Stethoscope
 } from 'lucide-react';
+import DrivingSimulator from '../../DrivingSimulator/DrivingSimulator';
 
 const ServicesPage = () => {
     const [now, setNow] = useState(new Date());
     const [showPopup, setShowPopup] = useState(false);
+    const [showGameModal, setShowGameModal] = useState(false);
     const navigate = useNavigate();
+
+    const selectedState = localStorage.getItem('selectedState') || 'Haryana';
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -61,7 +65,10 @@ const ServicesPage = () => {
                                 <span className='text-black font-bold ml-2'>TIME:</span>
                                 <span>{now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                             </div>
-                            <button className="mt-1 bg-[#659b39] hover:bg-[#55842f] text-white text-xs px-3 py-1 rounded shadow-sm font-semibold transition-colors">
+                            <button 
+                                onClick={() => navigate('/')}
+                                className="mt-1 bg-[#659b39] hover:bg-[#55842f] text-white text-xs px-3 py-1 rounded shadow-sm font-semibold transition-colors cursor-pointer"
+                            >
                                 Change State
                             </button>
                         </div>
@@ -79,12 +86,20 @@ const ServicesPage = () => {
                                     <button className="hover:text-gray-200 text-base">A+</button>
                                 </div>
                             </div>
-                            <button
-                                className="bg-[#659b39] hover:bg-[#55842f] text-white text-xs px-6 py-1 rounded shadow-sm font-semibold transition-colors"
-                                onClick={() => navigate('/login')}
-                            >
-                                Login
-                            </button>
+                            <div className="flex space-x-2">
+                                <button
+                                    className="bg-[#659b39] hover:bg-[#55842f] text-white text-xs px-6 py-1 rounded shadow-sm font-semibold transition-colors"
+                                    onClick={() => navigate('/login')}
+                                >
+                                    Login
+                                </button>
+                                <button
+                                    className="bg-[#1b5cb3] hover:bg-[#154a96] text-white text-xs px-6 py-1 rounded shadow-sm font-semibold transition-colors"
+                                    onClick={() => navigate('/register')}
+                                >
+                                    Register
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -93,7 +108,7 @@ const ServicesPage = () => {
             {/* Title Strip */}
             <div className="bg-[#e6f2ff] text-center py-2">
                 <h1 className="text-[#0000ff] text-xl font-bold uppercase tracking-wide">
-                    TRANSPORT DEPARTMENT, GOVERNMENT OF HARYANA
+                    TRANSPORT DEPARTMENT, GOVERNMENT OF {selectedState.toUpperCase()}
                 </h1>
             </div>
 
@@ -115,13 +130,28 @@ const ServicesPage = () => {
             <main className="flex-1 max-w-7xl mx-auto w-full px-8 py-12 relative">
                 <div className="grid grid-cols-5 gap-y-12 gap-x-6">
                     {services.map((service, index) => (
-                        <div key={index} className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setShowPopup(true)}>
+                        <div 
+                            key={index} 
+                            className="flex flex-col items-center text-center group cursor-pointer" 
+                            onClick={() => {
+                                if (index === 1) {
+                                    setShowGameModal(true);
+                                } else {
+                                    setShowPopup(true);
+                                }
+                            }}
+                        >
                             <div className="mb-4 transform transition-transform group-hover:scale-110 shadow-sm rounded-full">
                                 {service.icon}
                             </div>
                             <span className={`text-[13px] text-gray-700 max-w-[160px] leading-tight ${service.bold ? 'font-bold text-gray-900' : ''}`}>
                                 {service.label}
                             </span>
+                            {index === 1 && (
+                                <div className="text-[10px] text-emerald-600 font-extrabold tracking-wider mt-1 uppercase animate-pulse">
+                                    ● Currently Available
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -146,24 +176,80 @@ const ServicesPage = () => {
                 </div>
             </main>
 
-            {/* Funny Lunch Time Popup */}
+            {/* Retro Windows 95 Style Lunch Time Popup */}
             {showPopup && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 text-center border-t-8 border-orange-500 relative transform hover:scale-105 transition-transform duration-300">
-                        <div className="text-5xl mb-4">🍛</div>
-                        <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Service Not Available!</h2>
-                        <p className="text-lg text-gray-600 mb-6 font-medium">
-                            Arre bhai, abhi server down hai... <br/>
-                            <span className="text-xl text-red-600 font-bold mt-2 inline-block">Lunch time ke baad aana! 🕒</span>
-                        </p>
-                        <button 
-                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-8 rounded shadow-md transition-colors"
-                            onClick={() => setShowPopup(false)}
-                        >
-                            Theek Hai
-                        </button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 font-mono select-none">
+                    <div className="bg-[#c0c0c0] p-1 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[3px_3px_0px_0px_#000000] max-w-md w-full">
+                        {/* Retro Title Bar */}
+                        <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center font-bold text-sm tracking-wide font-sans">
+                            <span className="flex items-center gap-2">
+                                📠 SYSTEM ALERT: SERVICE_OFFLINE_404
+                            </span>
+                            <button 
+                                onClick={() => setShowPopup(false)}
+                                className="bg-[#c0c0c0] text-black border-t border-l border-white border-b border-r border-[#808080] shadow-[1px_1px_0px_0px_#000000] w-5 h-5 flex items-center justify-center text-xs active:border-t-black active:border-l-black active:border-b-white active:border-r-white active:shadow-none font-sans font-bold cursor-pointer"
+                            >
+                                X
+                            </button>
+                        </div>
+
+                        {/* Retro Window Content */}
+                        <div className="p-5 flex flex-col gap-4 font-sans">
+                            <div className="flex items-start gap-4">
+                                {/* Vintage Lunch Plate Emoji */}
+                                <div className="text-4xl flex-shrink-0 animate-bounce">🍛</div>
+                                
+                                <div className="flex-1 text-left">
+                                    <h3 className="text-base font-bold text-black mb-1">
+                                        Fatal Exception - Service Terminated
+                                    </h3>
+                                    <p className="text-xs text-gray-800 leading-relaxed font-bold">
+                                        An error has occurred while trying to access Sarathi Services. The operator is currently unresponsive due to carbohydrate overload.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Inner Inset Box for the Funny Message */}
+                            <div className="w-full border-t-2 border-l-2 border-[#808080] border-b-2 border-r-2 border-white p-4 bg-white text-xs text-black shadow-inner">
+                                <div className="font-bold text-red-700 mb-2 flex items-center gap-1 text-left">
+                                    ⚠️ DETAILS:
+                                </div>
+                                <div className="font-mono bg-[#f0f0f0] p-2 border border-gray-400 text-[11px] leading-relaxed text-gray-900 break-words font-semibold text-left">
+                                    SERVER STATUS: EATING_LUNCH<br />
+                                    OPERATOR STATE: SLEEPING<br />
+                                    MESSAGE: "Arre bhai, abhi server down hai... Lunch time ke baad aana! 🕒"
+                                </div>
+                            </div>
+
+                            {/* Retro Actions Row */}
+                            <div className="flex justify-end gap-3 mt-1">
+                                <button 
+                                    className="bg-[#c0c0c0] text-black font-bold text-xs px-6 py-2 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[1px_1px_0px_0px_#000000] active:border-t-2 active:border-l-2 active:border-b-2 active:border-r-2 active:border-white active:border-t-[#808080] active:border-l-[#808080] active:shadow-none outline-none focus:outline-dotted focus:outline-1 focus:outline-black cursor-pointer"
+                                    onClick={() => setShowPopup(false)}
+                                >
+                                    Theek Hai (OK)
+                                </button>
+                                <button 
+                                    className="bg-[#c0c0c0] text-black text-xs px-6 py-2 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#808080] shadow-[1px_1px_0px_0px_#000000] active:border-t-2 active:border-l-2 active:border-b-2 active:border-r-2 active:border-white active:border-t-[#808080] active:border-l-[#808080] active:shadow-none outline-none focus:outline-dotted focus:outline-1 focus:outline-black cursor-pointer"
+                                    onClick={() => alert("System: Refreshing failed because operator refuses to put down the samosa.")}
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            )}
+
+            {/* Retro 2D Driving Simulator Game Modal */}
+            {showGameModal && (
+                <DrivingSimulator 
+                    onClose={() => setShowGameModal(false)}
+                    onSuccess={() => {
+                        // Display a custom retro dialog alert on success
+                        alert("SUCCESS: Your Driving Licence has been officially processed and digitally signed by the Ministry! You are now legally cleared to drive.");
+                    }}
+                />
             )}
 
             {/* Footer */}

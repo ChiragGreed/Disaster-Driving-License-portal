@@ -4,11 +4,15 @@ import App from './App.jsx'
 import AppRoutes from './AppRoutes.jsx'
 import Effects from './Features/VisualEffects/Effects.jsx'
 
+
+
 createRoot(document.getElementById('root')).render(
-  <>
+
+
+  <AppRoutes>
     <Effects />
-    <AppRoutes>
-      <App />
-    </AppRoutes>
-  </>
+    <App />
+  </AppRoutes>
+
+
 )
