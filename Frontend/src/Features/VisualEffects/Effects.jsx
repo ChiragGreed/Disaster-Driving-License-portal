@@ -153,12 +153,11 @@ export default function Effects({ children }) {
         style={{ pointerEvents: 'none' }}
       >
         <img
-          src="/images/CarKey.png"
-          alt="car key cursor"
-          className="w-10 h-10 rotate-150 object-contain pointer-events-none"
+          src="/images/pngwing.com.png"
+          alt="custom cursor"
+          className="w-15 h-15 rotate-340 object-contain pointer-events-none"
           style={{
             pointerEvents: 'none',
-            filter: 'brightness(1.1) drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))'
           }}
         />
       </div>

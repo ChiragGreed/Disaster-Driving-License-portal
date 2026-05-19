@@ -21,6 +21,13 @@ const ServicesPage = () => {
         return () => clearInterval(timer);
     }, []);
 
+    useEffect(() => {
+        if (showPopup) {
+            const audio = new Audio('/Sounds/Fahhh - QuickSounds.com.mp3');
+            audio.play().catch(err => console.log('Audio play failed:', err));
+        }
+    }, [showPopup]);
+
     const services = [
         { icon: <div className="bg-[#5c4a73] rounded-full p-4"><FileText className="text-white w-7 h-7" /></div>, label: "Apply for Learner Licence" },
         { icon: <div className="bg-[#1d4ed8] rounded-full p-4"><CreditCard className="text-white w-7 h-7" /></div>, label: "Apply for Driving Licence" },

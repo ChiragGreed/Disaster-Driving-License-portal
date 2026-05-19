@@ -1,3 +1,12 @@
+/* Slide-in animation for bribe button over quit */
+@keyframes slideInBribe {
+    0% { transform: scale(0.2) translate(-50%, -50%) rotate(-30deg); opacity: 0; }
+    60% { transform: scale(1.1) translate(-50%, -50%) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1) translate(-50%, -50%) rotate(0deg); opacity: 1; }
+}
+.animate-slide-in {
+    animation: slideInBribe 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
 /* Retro Cabinet Neon Header & Overlay animations */
 @keyframes coinFly {
     0% {
